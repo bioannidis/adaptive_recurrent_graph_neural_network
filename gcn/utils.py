@@ -23,7 +23,8 @@ def sample_mask(idx, l):
     return np.array(mask, dtype=np.bool)
 
 
-def load_data(dataset_str):
+def load_data(FLAGS):
+    dataset_str=FLAGS.dataset
     """
     Loads input data from gcn/data directory
 
@@ -70,7 +71,7 @@ def load_data(dataset_str):
     features = sp.vstack((allx, tx)).tolil()
     features[test_idx_reorder, :] = features[test_idx_range, :]
     adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
-    nbr_neighbors=[5,10,20,40,50,60]
+    nbr_neighbors=FLAGS.neighbor_list
     adj_list=np.append([adj],create_network_nearest_neighbor(features,nbr_neighbors))
     labels = np.vstack((ally, ty))
     labels[test_idx_reorder, :] = labels[test_idx_range, :]

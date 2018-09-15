@@ -381,9 +381,12 @@ class AdaptiveGraphRecursiveConvolution(Layer):
                     inp_graph_outputs.append(inp_graph_output)
         with tf.name_scope("combine_graph_outputs"):
             # implement mixing of the different graphs
-            hid_output = tf.squeeze(tf.tensordot(self.vars['graph_mixing_weight'],graph_outputs,[[0],[0]]))
-            inp_output = tf.squeeze(tf.tensordot(self.vars['inp_graph_mixing_weight'], inp_graph_outputs, [[0], [0]]))
-            output = tf.add(hid_output,inp_output,name='add_hidandfeats')
+            with tf.name_scope("mix_graphs_hidden"):
+                hid_output = tf.squeeze(tf.tensordot(self.vars['graph_mixing_weight'],graph_outputs,[[0],[0]]))
+            with tf.name_scope("mix_graphs_inp"):
+                inp_output = tf.squeeze(tf.tensordot(self.vars['inp_graph_mixing_weight'], inp_graph_outputs, [[0], [0]]))
+            with tf.name_scope("add_hidden_input"):
+                output = tf.add(hid_output,inp_output,name='add_hidandfeats')
 
         # bias
         if self.bias:

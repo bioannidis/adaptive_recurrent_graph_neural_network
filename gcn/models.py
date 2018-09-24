@@ -247,6 +247,8 @@ class AGRCN(Model):
         with tf.name_scope("weights_reg"):
             for var in self.layers[0].vars.values():
                 self.loss += FLAGS.weight_decay * tf.nn.l2_loss(var)
+            for var in self.layers[0].vars.values():
+                self.loss += FLAGS.sparse_reg * tf.reduce_sum(tf.abs(var))
 
         # Cross entropy error
         with tf.name_scope("entropy_loss"):

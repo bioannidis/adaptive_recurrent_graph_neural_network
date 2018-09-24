@@ -27,7 +27,7 @@ flags.DEFINE_integer('early_stopping', 50, 'Tolerance for early stopping (# of e
 flags.DEFINE_list('neighbor_list',[5,10,20,40,60],'List of nearest neighbor graphs')
 flags.DEFINE_integer('max_degree', 3, 'Maximum Chebyshev polynomial degree.')
 flags.DEFINE_float('reg_scalar', 1e-6, 'Initial learning rate.')
-flags.DEFINE_float('sparse_reg', 1e-5, 'Weight of sparsity regularizer.')
+flags.DEFINE_float('sparse_reg', 1e-8, 'Weight of sparsity regularizer.')
 
 # Load data
 adj_list, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(FLAGS)

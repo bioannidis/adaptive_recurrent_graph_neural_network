@@ -2,7 +2,7 @@ from __future__ import division
 from __future__ import print_function
 
 import time
-
+import os
 import tensorflow as tf
 
 from gcn.utils import *
@@ -13,7 +13,13 @@ def del_all_flags(FLAGS):
     keys_list = [keys for keys in flags_dict]
     for keys in keys_list:
         FLAGS.__delattr__(keys)
-
+def get_var_value(filename="varstore.dat"):
+    with open(filename, "r+") as f:
+        val = float(f.read() or 0) + 1
+        f.seek(0)
+        f.truncate()
+        f.write(str(val))
+        return val
 
 
 def test_architecture(FLAGS,file):
@@ -68,7 +74,7 @@ def test_architecture(FLAGS,file):
         }
 
     # Create model
-    # with tf.device("/gpu:0"):
+    #with tf.device("/gpu:0"):
     model = model_func(placeholders, input_dim=features[2][1], logging=True)
 
     # Initialize session
@@ -125,7 +131,7 @@ def test_architecture(FLAGS,file):
         print("Test set results:", "cost=", "{:.5f}".format(test_cost),
               "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
         file.close()
-        # sess.close()
+        sess.close()
         del_all_flags(FLAGS)
         return test_acc
 
@@ -134,18 +140,22 @@ def test_architecture(FLAGS,file):
 seed = 123
 np.random.seed(seed)
 tf.set_random_seed(seed)
-learn_rates = np.linspace(0.01,0.08,7)
-smooth_regs = np.logspace(-7,-4,8)
-hidden_units = range(8,32,4)
+learn_rates = np.linspace(0.01,0.08,4)
+smooth_regs = np.logspace(-7,-4,4)
+hidden_units = range(8,32,8)
 dropout_rates = np.linspace(0.2,0.8,4)
-sparse_regs = np.logspace(-7,-4,1)
+sparse_regs = np.logspace(-7,-4,4)
 weight_decays = np.logspace(-7,-4,1)
 epochs=200
 weight_decay=5e-4
-neighbor_list=[5,10,20,40]
+neighbor_list=[5,10]
 max_degree=3
 sparse_reg=1e-4
 early_stopping=50
+your_counter = get_var_value()
+folder_name= "results/tests"+str(your_counter)+"/"
+if not os.path.exists(folder_name):
+    os.makedirs(folder_name)
 # Settings
 test_results={}
 
@@ -172,9 +182,9 @@ for learn_rate in learn_rates:
                                     +str(hidden_unit)+"epochs="+str(epochs)+",dropout_rate="+str(dropout_rate)+\
                              ",weight_decay="+str(weight_decay)+"early_stopping="+str(early_stopping)+",neighbor_list="+\
                              str(neighbor_list)+",max_degree="+str(max_degree)+",sparse_reg="+str(sparse_reg)
-                    f = open("results/"+"config:"+test_identifier+".txt", "w+")
+                    f = open(folder_name+"config:"+test_identifier+".txt", "w+")
                     test_acc = test_architecture(FLAGS, f)
                     test_results[test_identifier]=test_acc
-                    f_res=open("results/final_results_neighbor_list="+str(neighbor_list)+".txt",'w')
+                    f_res=open(folder_name+"final_results_neighbor_list="+str(neighbor_list)+".txt",'w')
                     f_res.write(str(test_results))
 

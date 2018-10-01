@@ -54,7 +54,20 @@ def load_data(FLAGS):
                 objects.append(pkl.load(f))
 
     x, y, tx, ty, allx, ally, graph = tuple(objects)
-    test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
+    if dataset_str=='test':
+        with open("data/ind.{}.test.index".format(dataset_str), 'rb') as f:
+            if sys.version_info > (3, 0):
+                test_idx_reorder=(pkl.load(f, encoding='latin1'))
+            else:
+                test_idx_reorder =(pkl.load(f))
+        adj = nx.adjacency_matrix(graph)
+        features = sp.vstack((allx)).tolil()
+        labels = np.vstack((ally))
+    else:
+        features = sp.vstack((allx, tx)).tolil()
+        labels = np.vstack((ally, ty))
+        test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
+        adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
     test_idx_range = np.sort(test_idx_reorder)
 
     if dataset_str == 'citeseer':
@@ -68,17 +81,16 @@ def load_data(FLAGS):
         ty_extended[test_idx_range-min(test_idx_range), :] = ty
         ty = ty_extended
 
-    features = sp.vstack((allx, tx)).tolil()
     features[test_idx_reorder, :] = features[test_idx_range, :]
-    adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
     nbr_neighbors=FLAGS.neighbor_list
     adj_list=np.append([adj],create_network_nearest_neighbor(features,nbr_neighbors))
-    labels = np.vstack((ally, ty))
+
     labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
+    val_size= 50
     idx_test = test_idx_range.tolist()
     idx_train = range(len(y))
-    idx_val = range(len(y), len(y)+500)
+    idx_val = range(len(y), len(y)+val_size)
 
     train_mask = sample_mask(idx_train, labels.shape[0])
     val_mask = sample_mask(idx_val, labels.shape[0])

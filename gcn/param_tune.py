@@ -141,14 +141,14 @@ seed = 123
 np.random.seed(seed)
 tf.set_random_seed(seed)
 learn_rates = np.linspace(0.01,0.08,4)
-smooth_regs = np.logspace(-7,-4,4)
+smooth_regs = np.logspace(-7,-3,4)
 hidden_units = range(8,32,8)
 dropout_rates = np.linspace(0.2,0.8,4)
-sparse_regs = np.logspace(-7,-4,4)
+sparse_regs = np.logspace(-7,-3,4)
 weight_decays = np.logspace(-7,-4,1)
 epochs=200
 weight_decay=5e-4
-neighbor_list=[5,10]
+neighbor_list=[5,10,20,30,40,50]
 max_degree=3
 sparse_reg=1e-4
 early_stopping=50
@@ -166,7 +166,7 @@ for learn_rate in learn_rates:
                 for sparse_reg in sparse_regs:
                     flags = tf.app.flags
                     FLAGS = flags.FLAGS
-                    flags.DEFINE_string('dataset', 'cora', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
+                    flags.DEFINE_string('dataset', 'test', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
                     flags.DEFINE_string('model', 'agrcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
                     flags.DEFINE_float('learning_rate', learn_rate, 'Initial learning rate.')
                     flags.DEFINE_integer('epochs', epochs, 'Number of epochs to train.')

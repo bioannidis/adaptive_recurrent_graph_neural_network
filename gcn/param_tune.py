@@ -134,7 +134,7 @@ def test_architecture(FLAGS,file):
         sess.close()
         del_all_flags(FLAGS)
         return test_acc
-    
+        
 
 # Set random seed
 seed = 123

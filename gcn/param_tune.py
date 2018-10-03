@@ -148,10 +148,11 @@ sparse_regs = np.logspace(-7,-3,4)
 weight_decays = np.logspace(-7,-4,1)
 epochs=200
 weight_decay=5e-4
-neighbor_list=[5,10,20]
+neighbor_list=[3]
 max_degree=3
 sparse_reg=1e-4
 early_stopping=50
+dataset= 'cora'
 your_counter = get_var_value()
 folder_name= "results/tests"+str(your_counter)+"/"
 if not os.path.exists(folder_name):
@@ -166,8 +167,8 @@ for learn_rate in learn_rates:
                 for sparse_reg in sparse_regs:
                     flags = tf.app.flags
                     FLAGS = flags.FLAGS
-                    flags.DEFINE_string('dataset', dataset, 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
-                    flags.DEFINE_string('model', model, 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
+                    flags.DEFINE_string('dataset', 'test', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
+                    flags.DEFINE_string('model', 'agrcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
                     flags.DEFINE_float('learning_rate', learn_rate, 'Initial learning rate.')
                     flags.DEFINE_integer('epochs', epochs, 'Number of epochs to train.')
                     flags.DEFINE_integer('hidden1', hidden_unit, 'Number of units in hidden layer 1.')

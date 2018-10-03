@@ -5,6 +5,8 @@ import scipy.sparse as sp
 from scipy.sparse.linalg.eigen.arpack import eigsh
 import sys
 from sklearn.neighbors import kneighbors_graph
+from sklearn import svm
+
 import tensorflow as tf
 
 
@@ -54,13 +56,17 @@ def load_data(FLAGS):
                 objects.append(pkl.load(f))
 
     x, y, tx, ty, allx, ally, graph = tuple(objects)
-    if dataset_str=='test':
+
+    if (dataset_str=='test') | (dataset_str=='breast_cancer'):
         with open("data/ind.{}.test.index".format(dataset_str), 'rb') as f:
             if sys.version_info > (3, 0):
                 test_idx_reorder=(pkl.load(f, encoding='latin1'))
             else:
                 test_idx_reorder =(pkl.load(f))
-        adj = nx.adjacency_matrix(graph)
+        if dataset_str=='test':
+            adj = nx.adjacency_matrix(graph)
+        else:
+            adj =[]
         features = sp.vstack((allx)).tolil()
         labels = np.vstack((ally))
     else:
@@ -102,7 +108,6 @@ def load_data(FLAGS):
     y_train[train_mask, :] = labels[train_mask, :]
     y_val[val_mask, :] = labels[val_mask, :]
     y_test[test_mask, :] = labels[test_mask, :]
-
     return adj_list, features, y_train, y_val, y_test, train_mask, val_mask, test_mask
 
 def create_network_nearest_neighbor(features,nbr_neighbors):
@@ -111,6 +116,11 @@ def create_network_nearest_neighbor(features,nbr_neighbors):
         adjacency=kneighbors_graph(features,n_neighbors=nbr_neighbor)
         adjacency_list=np.append(adjacency_list,[adjacency])
     return adjacency_list
+def svm_class(x,y,tx,ty):
+    clf = svm.SVC(gamma='scale')
+    clf.fit(x,y)
+    hatty=clf.predict(tx)
+    return  hatty
 
 def sparse_to_tuple(sparse_mx):
     """Convert sparse matrix to tuple representation."""

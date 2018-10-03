@@ -4,9 +4,9 @@ from __future__ import print_function
 import time
 
 import tensorflow as tf
-
 from gcn.utils import *
 from gcn.models import GCN, MLP, AGCN, AGRCN
+
 
 # Set random seed
 seed = 123
@@ -16,18 +16,18 @@ tf.set_random_seed(seed)
 # Settings
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('dataset', 'test', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
+flags.DEFINE_string('dataset', 'cora', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
 flags.DEFINE_string('model', 'agrcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
-flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
+flags.DEFINE_float('learning_rate', 0.005, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
-flags.DEFINE_float('dropout', 0.3, 'Dropout rate (1 - keep probability).')
+flags.DEFINE_float('dropout', 0.9, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_integer('early_stopping', 50, 'Tolerance for early stopping (# of epochs).')
-flags.DEFINE_list('neighbor_list',[5],'List of nearest neighbor graphs')
+flags.DEFINE_list('neighbor_list',[2],'List of nearest neighbor graphs')
 flags.DEFINE_integer('max_degree', 3, 'Maximum Chebyshev polynomial degree.')
-flags.DEFINE_float('reg_scalar', 1e-5, 'Initial learning rate.')
-flags.DEFINE_float('sparse_reg', 1e-5, 'Weight of sparsity regularizer.')
+flags.DEFINE_float('reg_scalar',5e-4, 'Weight of smoothness regularizer.')
+flags.DEFINE_float('sparse_reg', 0, 'Weight of sparsity regularizer.')
 
 # Load data
 adj_list, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(FLAGS)
@@ -37,12 +37,13 @@ features = preprocess_features(features)
 if FLAGS.model == 'gcn':
     supports= preprocess_adj_list(adj_list)
     num_supports = 1
+    num_graphs = len(adj_list)
     model_func = GCN
 elif FLAGS.model == 'gcn_cheby':
     supports= chebyshev_polynomials(adj_list, FLAGS.max_degree)
     num_supports = 1 + FLAGS.max_degree
     model_func = GCN
-elif FLAGS.model == 'agcn':
+elif FLAGS.model == 'cora':
     supports= preprocess_adj_list(adj_list)
     num_supports = 1
     num_graphs = len(adj_list)
@@ -93,19 +94,19 @@ def evaluate(features, supports, labels, mask, placeholders):
 
 # Init variables
 merged = tf.summary.merge_all()
-
-test_writer = tf.summary.FileWriter("/tmp/demo/2" + '/test')
+folder="/tmp/demo/8"
+test_writer = tf.summary.FileWriter( folder + '/test')
 
 sess.run(tf.global_variables_initializer())
 
 cost_val = []
-writer = tf.summary.FileWriter("/tmp/demo/1")
+writer = tf.summary.FileWriter(folder)
 writer.add_graph(sess.graph)
-
+train_writer = tf.summary.FileWriter(folder + '/train',
+                                     sess.graph)
 # Train model
 for epoch in range(FLAGS.epochs):
-    train_writer = tf.summary.FileWriter("/tmp/demo/2" + '/train'+'/'+ str(epoch),
-                                         sess.graph)
+
     t = time.time()
     # Construct feed dictionary
     feed_dict = construct_feed_dict(features, supports, y_train, train_mask, placeholders)

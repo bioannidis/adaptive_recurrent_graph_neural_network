@@ -143,7 +143,7 @@ class GraphConvolution(Layer):
             self.dropout = 0.
 
         self.act = act
-        self.support = placeholders['support']
+        self.support = placeholders['supports']
         self.sparse_inputs = sparse_inputs
         self.featureless = featureless
         self.bias = bias

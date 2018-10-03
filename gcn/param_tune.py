@@ -140,18 +140,19 @@ def test_architecture(FLAGS,file):
 seed = 123
 np.random.seed(seed)
 tf.set_random_seed(seed)
-learn_rates = np.linspace(0.01,0.08,4)
+learn_rates = [0.005]
 smooth_regs = np.logspace(-7,-3,4)
-hidden_units = range(8,32,8)
-dropout_rates = np.linspace(0.2,0.8,4)
-sparse_regs = np.logspace(-7,-3,4)
-weight_decays = np.logspace(-7,-4,1)
+hidden_units = [32]
+dropout_rates = np.linspace(0.6,0.9,4)
+sparse_regs = np.logspace(-7,-3,5)
+weight_decays = np.logspace(-7,-4,5)
 epochs=200
 weight_decay=5e-4
-neighbor_list=[5,10,20,30,40,50]
+neighbor_list=[3]
 max_degree=3
 sparse_reg=1e-4
 early_stopping=50
+dataset= 'cora'
 your_counter = get_var_value()
 folder_name= "results/tests"+str(your_counter)+"/"
 if not os.path.exists(folder_name):
@@ -164,27 +165,28 @@ for learn_rate in learn_rates:
         for hidden_unit in hidden_units:
             for dropout_rate in dropout_rates:
                 for sparse_reg in sparse_regs:
-                    flags = tf.app.flags
-                    FLAGS = flags.FLAGS
-                    flags.DEFINE_string('dataset', 'test', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
-                    flags.DEFINE_string('model', 'agrcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
-                    flags.DEFINE_float('learning_rate', learn_rate, 'Initial learning rate.')
-                    flags.DEFINE_integer('epochs', epochs, 'Number of epochs to train.')
-                    flags.DEFINE_integer('hidden1', hidden_unit, 'Number of units in hidden layer 1.')
-                    flags.DEFINE_float('dropout', dropout_rate, 'Dropout rate (1 - keep probability).')
-                    flags.DEFINE_float('weight_decay', weight_decay, 'Weight for L2 loss on embedding matrix.')
-                    flags.DEFINE_integer('early_stopping', early_stopping, 'Tolerance for early stopping (# of epochs).')
-                    flags.DEFINE_list('neighbor_list',neighbor_list,'List of nearest neighbor graphs')
-                    flags.DEFINE_integer('max_degree', max_degree, 'Maximum Chebyshev polynomial degree.')
-                    flags.DEFINE_float('reg_scalar', smooth_reg, 'Initial learning rate.')
-                    flags.DEFINE_float('sparse_reg', sparse_reg, 'Weight of sparsity regularizer.')
-                    test_identifier="config:"+"learn_rate="+str(learn_rate)+",smooth_reg="+str(smooth_reg)+",hidden_units="\
-                                    +str(hidden_unit)+"epochs="+str(epochs)+",dropout_rate="+str(dropout_rate)+\
-                             ",weight_decay="+str(weight_decay)+"early_stopping="+str(early_stopping)+",neighbor_list="+\
-                             str(neighbor_list)+",max_degree="+str(max_degree)+",sparse_reg="+str(sparse_reg)
-                    f = open(folder_name+"config:"+test_identifier+".txt", "w+")
-                    test_acc = test_architecture(FLAGS, f)
-                    test_results[test_identifier]=test_acc
-                    f_res=open(folder_name+"final_results_neighbor_list="+str(neighbor_list)+".txt",'w')
-                    f_res.write(str(test_results))
+                    for weight_decay in weight_decays:
+                        flags = tf.app.flags
+                        FLAGS = flags.FLAGS
+                        flags.DEFINE_string('dataset', dataset, 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
+                        flags.DEFINE_string('model', 'agrcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
+                        flags.DEFINE_float('learning_rate', learn_rate, 'Initial learning rate.')
+                        flags.DEFINE_integer('epochs', epochs, 'Number of epochs to train.')
+                        flags.DEFINE_integer('hidden1', hidden_unit, 'Number of units in hidden layer 1.')
+                        flags.DEFINE_float('dropout', dropout_rate, 'Dropout rate (1 - keep probability).')
+                        flags.DEFINE_float('weight_decay', weight_decay, 'Weight for L2 loss on embedding matrix.')
+                        flags.DEFINE_integer('early_stopping', early_stopping, 'Tolerance for early stopping (# of epochs).')
+                        flags.DEFINE_list('neighbor_list',neighbor_list,'List of nearest neighbor graphs')
+                        flags.DEFINE_integer('max_degree', max_degree, 'Maximum Chebyshev polynomial degree.')
+                        flags.DEFINE_float('reg_scalar', smooth_reg, 'Smoothness regularizer.')
+                        flags.DEFINE_float('sparse_reg', sparse_reg, 'Weight of sparsity regularizer.')
+                        test_identifier="config:"+"learn_rate="+str(learn_rate)+",smooth_reg="+str(smooth_reg)+",hidden_units="\
+                                        +str(hidden_unit)+"epochs="+str(epochs)+",dropout_rate="+str(dropout_rate)+\
+                                 ",weight_decay="+str(weight_decay)+"early_stopping="+str(early_stopping)+",neighbor_list="+\
+                                 str(neighbor_list)+",max_degree="+str(max_degree)+",sparse_reg="+str(sparse_reg)
+                        f = open(folder_name+"config:"+test_identifier+".txt", "w+")
+                        test_acc = test_architecture(FLAGS, f)
+                        test_results[test_identifier]=test_acc
+                        f_res=open(folder_name+"final_results_neighbor_list="+str(neighbor_list)+".txt",'w')
+                        f_res.write(str(test_results))
 

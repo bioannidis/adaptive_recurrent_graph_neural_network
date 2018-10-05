@@ -160,7 +160,7 @@ if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 # Settings
 test_results={}
-
+train_input=load_data(dataset,neighbor_list)
 for learn_rate in learn_rates:
     for smooth_reg in smooth_regs:
         for hidden_unit in hidden_units:
@@ -181,13 +181,12 @@ for learn_rate in learn_rates:
                         flags.DEFINE_integer('max_degree', max_degree, 'Maximum Chebyshev polynomial degree.')
                         flags.DEFINE_float('reg_scalar', smooth_reg, 'Initial learning rate.')
                         flags.DEFINE_float('sparse_reg', sparse_reg, 'Weight of sparsity regularizer.')
-                        train_input = load_data(FLAGS)
                         test_identifier="config:"+"learn_rate="+str(learn_rate)+",smooth_reg="+str(smooth_reg)+",hidden_units="\
                                         +str(hidden_unit)+"epochs="+str(epochs)+",dropout_rate="+str(dropout_rate)+\
                                  ",weight_decay="+str(weight_decay)+"early_stopping="+str(early_stopping)+",neighbor_list="+\
                                  str(neighbor_list)+",max_degree="+str(max_degree)+",sparse_reg="+str(sparse_reg)
                         f = open(folder_name+"config:"+test_identifier+".txt", "w+")
-                        test_acc = test_architecture(FLAGS, f)
+                        test_acc = test_architecture(FLAGS,train_input, f)
                         test_results[test_identifier]=test_acc
                         f_res=open(folder_name+"final_results_dataset="+dataset+"_neighbor_list="+str(neighbor_list)+".txt",'w')
                         f_res.write(str(test_results))

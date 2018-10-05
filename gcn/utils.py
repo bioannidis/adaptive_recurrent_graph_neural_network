@@ -25,8 +25,8 @@ def sample_mask(idx, l):
     return np.array(mask, dtype=np.bool)
 
 
-def load_data(FLAGS):
-    dataset_str=FLAGS.dataset
+def load_data(dataset_str,neighbor_list):
+
     """
     Loads input data from gcn/data directory
 
@@ -88,7 +88,7 @@ def load_data(FLAGS):
         ty = ty_extended
 
     features[test_idx_reorder, :] = features[test_idx_range, :]
-    nbr_neighbors=FLAGS.neighbor_list
+    nbr_neighbors=neighbor_list
     adj_list=np.append([adj],create_network_nearest_neighbor(features,nbr_neighbors))
 
     labels[test_idx_reorder, :] = labels[test_idx_range, :]

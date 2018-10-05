@@ -18,15 +18,15 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', 'cora', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
 flags.DEFINE_string('model', 'agrcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
-flags.DEFINE_float('learning_rate', 0.005, 'Initial learning rate.')
+flags.DEFINE_float('learning_rate', 0.0005, 'Initial learning rate.')
 flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
-flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
-flags.DEFINE_float('dropout', 0.9, 'Dropout rate (1 - keep probability).')
+flags.DEFINE_integer('hidden1', 64, 'Number of units in hidden layer 1.')
+flags.DEFINE_float('dropout', 0.8, 'Dropout rate (1 - keep probability).')
 flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_integer('early_stopping', 50, 'Tolerance for early stopping (# of epochs).')
 flags.DEFINE_list('neighbor_list',[2],'List of nearest neighbor graphs')
 flags.DEFINE_integer('max_degree', 3, 'Maximum Chebyshev polynomial degree.')
-flags.DEFINE_float('reg_scalar',5e-4, 'Weight of smoothness regularizer.')
+flags.DEFINE_float('reg_scalar',5e-4 , 'Weight of smoothness regularizer.')
 flags.DEFINE_float('sparse_reg', 0, 'Weight of sparsity regularizer.')
 
 # Load data
@@ -94,7 +94,7 @@ def evaluate(features, supports, labels, mask, placeholders):
 
 # Init variables
 merged = tf.summary.merge_all()
-folder="/tmp/demo/8"
+folder="/tmp/demo/10"
 test_writer = tf.summary.FileWriter( folder + '/test')
 
 sess.run(tf.global_variables_initializer())
@@ -129,6 +129,7 @@ for epoch in range(FLAGS.epochs):
 
 print("Optimization Finished!")
 
+#np.savetxt(fname='var_file',X=outs[0].decode("utf-8") )
 # Testing
 test_cost, test_acc, test_duration = evaluate(features, supports, y_test, test_mask, placeholders)
 print("Test set results:", "cost=", "{:.5f}".format(test_cost),

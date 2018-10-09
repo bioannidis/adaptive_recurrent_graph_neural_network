@@ -57,7 +57,8 @@ def load_data(dataset_str,neighbor_list):
 
     x, y, tx, ty, allx, ally, graph = tuple(objects)
 
-    if (dataset_str=='test') | (dataset_str=='breast_cancer'):
+    if (dataset_str=='test') | (dataset_str=='breast_cancer') | (dataset_str=='ionosphere') \
+            | (dataset_str == 'synthetic'):
         with open("data/ind.{}.test.index".format(dataset_str), 'rb') as f:
             if sys.version_info > (3, 0):
                 test_idx_reorder=(pkl.load(f, encoding='latin1'))
@@ -96,7 +97,7 @@ def load_data(dataset_str,neighbor_list):
 
     labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
-    val_size= 50
+    val_size= 100
     idx_test = test_idx_range.tolist()
     idx_train = range(len(y))
     idx_val = range(len(y), len(y)+val_size)

@@ -271,8 +271,21 @@ class AGRCN(Model):
                                                     dropout=True,
                                                     sparse_inputs=True,
                                                     logging=self.logging))
+        if FLAGS.hidden2!=0:
+            self.layers.append(AdaptiveGraphRecursiveConvolution(input_dim=FLAGS.hidden1,
+                                                                 net_input_dim=self.input_dim,
+                                                                 net_input=self.inputs,
+                                                        output_dim=FLAGS.hidden2,
+                                                        placeholders=self.placeholders,
+                                                        act=tf.nn.relu,
+                                                        dropout=True,
+                                                        sparse_inputs=False,
+                                                        logging=self.logging))
+            out_inp_dimension=FLAGS.hidden2
+        else:
+            out_inp_dimension=FLAGS.hidden1
 
-        self.layers.append(AdaptiveGraphRecursiveConvolution(input_dim=FLAGS.hidden1,
+        self.layers.append(AdaptiveGraphRecursiveConvolution(input_dim=out_inp_dimension,
                                                                 net_input_dim=self.input_dim,
                                                                 net_input=self.inputs,
                                                                 output_dim=self.output_dim,

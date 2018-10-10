@@ -57,7 +57,8 @@ def load_data(dataset_str,neighbor_list):
 
     x, y, tx, ty, allx, ally, graph = tuple(objects)
 
-    if (dataset_str=='test') | (dataset_str=='breast_cancer'):
+    if (dataset_str=='test') | (dataset_str=='breast_cancer') | (dataset_str=='ionosphere') \
+            | (dataset_str == 'synthetic'):
         with open("data/ind.{}.test.index".format(dataset_str), 'rb') as f:
             if sys.version_info > (3, 0):
                 test_idx_reorder=(pkl.load(f, encoding='latin1'))
@@ -69,23 +70,26 @@ def load_data(dataset_str,neighbor_list):
             adj =[]
         features = sp.vstack((allx)).tolil()
         labels = np.vstack((ally))
+        test_idx_range = np.sort(test_idx_reorder)
     else:
+        test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
+        test_idx_range = np.sort(test_idx_reorder)
+        if dataset_str == 'citeseer':
+            # Fix citeseer dataset (there are some isolated nodes in the graph)
+            # Find isolated nodes, add them as zero-vecs into the right position
+            test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder) + 1)
+            tx_extended = sp.lil_matrix((len(test_idx_range_full), x.shape[1]))
+            tx_extended[test_idx_range - min(test_idx_range), :] = tx
+            tx = tx_extended
+            ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
+            ty_extended[test_idx_range - min(test_idx_range), :] = ty
+            ty = ty_extended
         features = sp.vstack((allx, tx)).tolil()
         labels = np.vstack((ally, ty))
-        test_idx_reorder = parse_index_file("data/ind.{}.test.index".format(dataset_str))
         adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
-    test_idx_range = np.sort(test_idx_reorder)
 
-    if dataset_str == 'citeseer':
-        # Fix citeseer dataset (there are some isolated nodes in the graph)
-        # Find isolated nodes, add them as zero-vecs into the right position
-        test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder)+1)
-        tx_extended = sp.lil_matrix((len(test_idx_range_full), x.shape[1]))
-        tx_extended[test_idx_range-min(test_idx_range), :] = tx
-        tx = tx_extended
-        ty_extended = np.zeros((len(test_idx_range_full), y.shape[1]))
-        ty_extended[test_idx_range-min(test_idx_range), :] = ty
-        ty = ty_extended
+
+
 
     features[test_idx_reorder, :] = features[test_idx_range, :]
     nbr_neighbors=neighbor_list
@@ -93,7 +97,7 @@ def load_data(dataset_str,neighbor_list):
 
     labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
-    val_size= 500
+    val_size= 100
     idx_test = test_idx_range.tolist()
     idx_train = range(len(y))
     idx_val = range(len(y), len(y)+val_size)

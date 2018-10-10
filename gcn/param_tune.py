@@ -143,13 +143,13 @@ tf.set_random_seed(seed)
 learn_rates = [0.005]#np.linspace(0.01,0.08,4)
 smooth_regs = np.logspace(-6,-4,3)
 hidden_units = [64]#range(8,32,8)
-dropout_rates = [0,85,0.95]#np.linspace(0.4,0.8,4)
+dropout_rates = [0.2,0.6,0.85]#np.linspace(0.4,0.8,4)
 sparse_regs = np.logspace(-7,-4,4)
 weight_decays = np.logspace(-7,-4,4)
 epochs=200
 weight_decay=5e-4
 model = 'agrcn'
-neighbor_list=[5]
+neighbor_list=[2]
 max_degree=3
 sparse_reg=1e-4
 early_stopping=50

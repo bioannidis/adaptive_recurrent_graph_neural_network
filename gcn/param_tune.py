@@ -141,12 +141,12 @@ seed = 123
 np.random.seed(seed)
 tf.set_random_seed(seed)
 learn_rates = [0.005]#np.linspace(0.01,0.08,4)
-smooth_regs = np.logspace(-6,-4,3)
+smooth_regs = np.logspace(-8,-6,3)
 hidden_units1 = [64]#range(8,32,8)
 hidden_units2 = [0]#range(8,32,8)
-dropout_rates = [0.2,0.6,0.85]#np.linspace(0.4,0.8,4)
-sparse_regs = np.logspace(-7,-4,4)
-weight_decays = np.logspace(-7,-4,4)
+dropout_rates = [0.2]#np.linspace(0.4,0.8,4)
+sparse_regs = np.logspace(-8,-5,5)
+weight_decays = np.logspace(-8,-5,5)
 epochs=200
 weight_decay=5e-4
 model = 'agrcn'

@@ -24,7 +24,7 @@ def get_var_value(filename="varstore.dat"):
 
 def test_architecture(FLAGS,train_input,file):
     # Load data
-    sys.stdout = file
+    #sys.stdout = file
     adj_list, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = train_input
     tf.reset_default_graph()
 
@@ -116,9 +116,9 @@ def test_architecture(FLAGS,train_input,file):
             cost_val.append(cost)
 
             # Print results
-            print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[2]),
-                  "train_acc=", "{:.5f}".format(outs[3]), "val_loss=", "{:.5f}".format(cost),
-                  "val_acc=", "{:.5f}".format(acc), "time=", "{:.5f}".format(time.time() - t))
+            # print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[2]), "train_acc=",
+            # "{:.5f}".format(outs[3]), "val_loss=", "{:.5f}".format(cost), "val_acc=", "{:.5f}".format(acc), "time=",
+            # "{:.5f}".format(time.time() - t))
 
             if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping + 1):-1]):
                 print("Early stopping...")
@@ -130,9 +130,8 @@ def test_architecture(FLAGS,train_input,file):
         test_cost, test_acc, test_duration = evaluate(features, supports, y_test, test_mask, placeholders)
         print("Test set results:", "cost=", "{:.5f}".format(test_cost),
               "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
-        file.close()
+        #file.close()
         sess.close()
-        del_all_flags(FLAGS)
         return test_acc
 
 
@@ -141,12 +140,12 @@ seed = 123
 np.random.seed(seed)
 tf.set_random_seed(seed)
 learn_rates = [0.005]#np.linspace(0.01,0.08,4)
-smooth_regs = np.logspace(-8,-6,3)
+smooth_regs = np.logspace(-6,-5,3)
 hidden_units1 = [64]#range(8,32,8)
 hidden_units2 = [0]#range(8,32,8)
-dropout_rates = [0.2]#np.linspace(0.4,0.8,4)
-sparse_regs = np.logspace(-8,-5,5)
-weight_decays = np.logspace(-8,-5,5)
+dropout_rates = [0.9]#np.linspace(0.4,0.8,4)
+sparse_regs = np.logspace(-5,-3,3)
+weight_decays = np.logspace(-6,-4,4)
 epochs=200
 weight_decay=5e-4
 model = 'agrcn'
@@ -154,13 +153,13 @@ neighbor_list=[2]
 max_degree=3
 sparse_reg=1e-4
 early_stopping=50
-dataset= 'ionosphere'
+dataset= 'cora'
 your_counter = get_var_value()
 folder_name= "results/tests"+str(your_counter)+"/"
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 # Settings
-
+monte_carlo = 3
 test_results={}
 with tf.device("/cpu:0"):
     train_input=load_data(dataset,neighbor_list)
@@ -172,6 +171,7 @@ with tf.device("/gpu:0"):
                     for dropout_rate in dropout_rates:
                         for sparse_reg in sparse_regs:
                             for weight_decay in weight_decays:
+                                test_acc=np.zeros(shape=(monte_carlo,1))
                                 flags = tf.app.flags
                                 FLAGS = flags.FLAGS
                                 flags.DEFINE_string('dataset', dataset, 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
@@ -192,9 +192,11 @@ with tf.device("/gpu:0"):
                                                 +str(hidden_unit2)+"epochs="+str(epochs)+",dropout_rate="+str(dropout_rate)+\
                                          ",weight_decay="+str(weight_decay)+"early_stopping="+str(early_stopping)+",neighbor_list="+\
                                          str(neighbor_list)+",max_degree="+str(max_degree)+",sparse_reg="+str(sparse_reg)
-                                f = open(folder_name+"config:"+test_identifier+".txt", "w+")
-                                test_acc = test_architecture(FLAGS,train_input, f)
-                                test_results[test_identifier]=test_acc
+                                #f = open(folder_name+"config:"+test_identifier+".txt", "w+")
+                                for s_ind in range(monte_carlo):
+                                    test_acc[s_ind] = test_architecture(FLAGS,train_input, None)
+                                del_all_flags(FLAGS)
+                                test_results[test_identifier]=np.mean(test_acc)
                                 f_res=open(folder_name+"final_results_dataset="+dataset+"_neighbor_list="+str(neighbor_list)+".txt",'w')
                                 f_res.write(str(test_results))
 

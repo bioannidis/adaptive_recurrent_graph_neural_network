@@ -2,20 +2,14 @@ import sys
 import networkx as nx
 import random
 import numpy as np
+import  sklearn as sk
 import  pickle as pkl
 from scipy import  sparse
+from sklearn import  datasets
 import scipy.sparse as sp
 from networkx.algorithms import community
-from subprocess import call
 
 
-def lfr_reader_for_simple(folder_name):
-    # sys.path.append('/home/umhadmin/research/weighted_networks/')
-    # call(["./benchmark",     "-f flags.dat"])
-    communities_full = np.genfromtxt(folder_name+'/community.dat', dtype=float)
-    communities=communities_full[:,1]
-    gr = nx.read_weighted_edgelist(folder_name+'/network.dat')
-    return communities, gr
 
 def one_hot_encoding(labels):
     nbr_labels=len(np.unique(labels))
@@ -26,8 +20,11 @@ def one_hot_encoding(labels):
 
 def generate_data(graph_flags, test_flags, graph_feat_flags, graph_label_flags,dataset_str):
     graph=generate_graph(graph_flags)
-    features=generate_features(graph, graph_feat_flags, graph_flags)
-    labels=generate_labels(graph,graph_label_flags,graph_flags)
+    if graph_flags['random']['bool'] == 1:
+        features,labels=generate_random_class_problem(graph_flags)
+    else:
+        features=generate_features(graph, graph_feat_flags, graph_flags)
+        labels=generate_labels(graph,graph_label_flags,graph_flags)
     x, tx, y, ty, test_idx= sample_data(test_flags,labels,features)
     allx= sp.vstack((x, tx))
     ally = np.vstack((y, ty))
@@ -35,7 +32,7 @@ def generate_data(graph_flags, test_flags, graph_feat_flags, graph_label_flags,d
 
 
 def generate_graph(graph_flags):
-    if graph_flags['breast_cancer']['bool']==1 | graph_flags['ionosphere']['bool']==1 :
+    if (graph_flags['breast_cancer']['bool']==1 | graph_flags['ionosphere']['bool']==1) | graph_flags['random']['bool'] == 1:
         graph=[]
     elif graph_flags['erdos']['bool']==1 :
         graph=nx.fast_gnp_random_graph(n=graph_flags['nbr_nodes'],p=graph_flags['erdos']['edge_prob'],
@@ -52,7 +49,9 @@ def generate_graph(graph_flags):
     return graph
 
 def generate_labels(graph, graph_label_flags,graph_flags):
-    if graph_flags['breast_cancer']['bool'] == 1:
+    if graph_flags['random']['bool'] == 1:
+        features, labels = generate_random_class_problem(graph_flags)
+    elif graph_flags['breast_cancer']['bool'] == 1:
         features, labels = read_breast_cancer_data()
     elif graph_flags['ionosphere']['bool'] == 1:
         features, labels = read_ionosphere_data()
@@ -61,13 +60,17 @@ def generate_labels(graph, graph_label_flags,graph_flags):
         top_level_communities=next(communities_generator)
         labels=None
     elif graph_flags['lfr']['bool'] == 1:
-        labels, graph = lfr_reader_for_simple(graph_flags['lfr']['folder'])
-        labels = np.expand_dims(labels, axis=1) - 1
+        com_labels, graph = lfr_reader_for_simple(graph_flags['lfr']['folder'])
+        ban_labels=gen_ban_labels(graph)
+        labels = np.expand_dims(ban_labels, axis=1) - 1
     return labels
 
 
+
 def generate_features(graph, graph_feat_flags,graph_flags):
-    if graph_flags['breast_cancer']['bool'] == 1:
+    if graph_flags['random']['bool'] == 1:
+        features, labels = generate_random_class_problem(graph_flags)
+    elif graph_flags['breast_cancer']['bool'] == 1:
         features, labels = read_breast_cancer_data()
     elif graph_flags['ionosphere']['bool'] == 1:
         features, labels = read_ionosphere_data()
@@ -96,6 +99,49 @@ def sample_data(test_flags,labels,features):
     tx = (sparse.csr_matrix(features[~np.in1d(range(len(labels)),train_ind)]))
     test_idx=range(len(train_ind),len(labels))
     return x,tx,y,ty,test_idx
+def generate_random_class_problem(graph_flags):
+    # gaussian with different variance and each gaussian corresponds to a label
+    #X, y=datasets.make_classification(n_samples=graph_flags['nbr_nodes'],
+    #                                n_classes=graph_flags['random']['nbr_classes'])
+    iter=0
+    for mean, var in zip( graph_flags['random']['means'], graph_flags['random']['vars']):
+        v_mean=mean*np.ones(shape=(graph_flags['random']['dim'],1))
+        v_var=var*np.ones(shape=(graph_flags['random']['dim'],1))
+        if iter ==0:
+            X= np.random.normal(v_mean, v_var, size=(graph_flags['random']['dim'],
+                                                     graph_flags['random']['per_class_ex']))
+            y = iter * np.ones( shape=(graph_flags['random']['per_class_ex'], 1))
+        else:
+            X =np.append(X,np.random.normal(v_mean,v_var, size=(graph_flags['random']['dim'],
+                                             graph_flags['random']['per_class_ex'])), axis=1)
+            y= np.append(y,iter*np.ones( shape=(graph_flags['random']['per_class_ex'],1)))
+        iter+=1
+    X=np.transpose(X)
+    permute_ind = list(range(len(y)))
+    np.random.shuffle(permute_ind)
+    X = X[permute_ind]
+    y = y[permute_ind]
+
+
+    return X, y
+
+
+def gen_ban_labels(graph):
+    laplacian=nx.laplacian_matrix(graph)
+    vals, vecs=sp.linalg.eigs(laplacian, k=2)
+    vecs=np.real(vecs)
+    ban_labels= ((vecs[:,1]>0)).astype(int)
+    return ban_labels
+
+
+
+def lfr_reader_for_simple(folder_name):
+    # sys.path.append('/home/umhadmin/research/weighted_networks/')
+    # call(["./benchmark",     "-f flags.dat"])
+    communities_full = np.genfromtxt(folder_name+'/community.dat', dtype=float)
+    communities=communities_full[:,1]
+    gr = nx.read_weighted_edgelist(folder_name+'/network.dat')
+    return communities, gr
 
 def read_adult_data():
     data = []
@@ -150,8 +196,10 @@ def save_to_file (file, obj):
 
 
 nbr_nodes=1000
+nbr_classes=2
 tau1=3
 tau2=1.5
+variance=0.4
 mu=0.1
 average_degree=5
 min_community=30
@@ -167,7 +215,15 @@ graph_flags['erdos']={}
 
 graph_flags['erdos']['bool']=0
 graph_flags['lfr']={}
-graph_flags['lfr']['bool']=1
+graph_flags['random']={}
+graph_flags['random']['bool']=1
+graph_flags['random']['nbr_classes']=nbr_classes
+graph_flags['random']['means']=np.linspace(0,1,num=nbr_classes)
+graph_flags['random']['vars']=variance*np.ones(shape=(nbr_classes,1))
+graph_flags['random']['dim']=10
+graph_flags['random']['per_class_ex']=round(nbr_nodes/nbr_classes)
+
+graph_flags['lfr']['bool']=0
 graph_flags['lfr']['tau1']=tau1
 graph_flags['lfr']['tau2']=tau2
 graph_flags['breast_cancer']={}

@@ -97,7 +97,7 @@ def load_data(dataset_str,neighbor_list):
 
     labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
-    val_size= 100
+    val_size= 200
     idx_test = test_idx_range.tolist()
     idx_train = range(len(y))
     idx_val = range(len(y), len(y)+val_size)

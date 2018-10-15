@@ -18,18 +18,18 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', 'synthetic', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
 flags.DEFINE_string('model', 'agrcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
-flags.DEFINE_float('learning_rate', 0.02, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 400, 'Number of epochs to train.')
+flags.DEFINE_float('learning_rate', 0.005, 'Initial learning rate.')
+flags.DEFINE_integer('epochs', 800, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 8, 'Number of units in hidden layer 1.')
 # future use 2 layer
-flags.DEFINE_integer('hidden2', 0, 'Number of units in hidden layer 1.')
-flags.DEFINE_float('dropout', 0.2, 'Dropout rate (1 - keep probability).')
-flags.DEFINE_float('weight_decay', 5e-6, 'Weight for L2 loss on embedding matrix.')
-flags.DEFINE_integer('early_stopping', 400, 'Tolerance for early stopping (# of epochs).')
-flags.DEFINE_list('neighbor_list',[],'List of nearest neighbor graphs')
+flags.DEFINE_integer('hidden2', 0, 'Number of units in hidden layer 2.')
+flags.DEFINE_float('dropout', 0.01, 'Dropout rate (1 - keep probability).')
+flags.DEFINE_float('weight_decay', 9e-4, 'Weight for L2 loss on embedding matrix.')
+flags.DEFINE_integer('early_stopping', 100, 'Tolerance for early stopping (# of epochs).')
+flags.DEFINE_list('neighbor_list',[10],'List of nearest neighbor graphs')
 flags.DEFINE_integer('max_degree', 3, 'Maximum Chebyshev polynomial degree.')
-flags.DEFINE_float('reg_scalar', 5e-5, 'Weight of smoothness regularizer.')
-flags.DEFINE_float('sparse_reg', 5e-5, 'Weight of sparsity regularizer.')
+flags.DEFINE_float('reg_scalar', 9e-4, 'Weight of smoothness regularizer.')
+flags.DEFINE_float('sparse_reg', 9e-4, 'Weight of sparsity regularizer.')
 
 # Load data
 adj_list, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(dataset_str=

@@ -110,7 +110,7 @@ def load_data(dataset_str,neighbor_list):
 
     labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
-    val_size= 500
+    val_size= 100
     idx_test = test_idx_range.tolist()
     idx_train = range(len(y))
     idx_val = range(len(y), len(y)+val_size)
@@ -183,47 +183,50 @@ def test_architecture(FLAGS,train_input):
     model = model_func(placeholders, input_dim=features[2][1], logging=True)
 
     # Initialize session
-    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+    sess = tf.Session()
 
-        # Define model evaluation function
-        def evaluate(features, supports, labels, mask, placeholders):
-            t_test = time.time()
-            feed_dict_val = construct_feed_dict(features, supports, labels, mask, placeholders)
-            outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
-            return outs_val[0], outs_val[1], (time.time() - t_test)
+    # Define model evaluation function
+    def evaluate(features, supports, labels, mask, placeholders):
+        t_test = time.time()
+        feed_dict_val = construct_feed_dict(features, supports, labels, mask, placeholders)
+        outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
+        return outs_val[0], outs_val[1], (time.time() - t_test)
 
-        # compare recursive with nonrecursive..... the graphs......
+    # compare recursive with nonrecursive..... the graphs......
 
-        # Init variables
-        merged = tf.summary.merge_all()
-        sess.run(tf.global_variables_initializer())
+    # Init variables
+    sess.run(tf.global_variables_initializer())
 
-        cost_val = []
+    cost_val = []
 
-        # Train model
-        for epoch in range(FLAGS.epochs):
+    # Train model
+    for epoch in range(FLAGS.epochs):
+        # Construct feed dictionary
+        feed_dict = construct_feed_dict(features, supports, y_train, train_mask, placeholders)
+        feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+        # Training step
+        outs = sess.run([model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
+        # Validation
+        cost, acc, duration = evaluate(features, supports, y_val, val_mask, placeholders)
+        cost_val.append(cost)
 
-            # Construct feed dictionary
-            feed_dict = construct_feed_dict(features, supports, y_train, train_mask, placeholders)
-            feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-            # Training step
-            outs = sess.run([merged, model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
-            # Validation
-            cost, acc, duration = evaluate(features, supports, y_val, val_mask, placeholders)
-            cost_val.append(cost)
+        # Print resuflts
+        # print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[2]), "train_acc=",
+        # "{:.5f}".format(outs[3]), "val_loss=", "{:.5f}".format(cost), "val_acc=", "{:.5f}".format(acc), "time=",
+        # "{:.5f}".format(time.time() - t))
 
-            if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping + 1):-1]):
-                print("Early stopping...")
-                break
+        if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping + 1):-1]):
+            print("Early stopping...")
+            break
 
-        print("Optimization Finished!")
+    print("Optimization Finished!")
 
-        # Testing
-        test_cost, test_acc, test_duration = evaluate(features, supports, y_test, test_mask, placeholders)
-        print("Test set results:", "cost=", "{:.5f}".format(test_cost),
-              "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
-        sess.close()
-        return test_acc
+    # Testing
+    test_cost, test_acc, test_duration = evaluate(features, supports, y_test, test_mask, placeholders)
+    print("Test set results:", "cost=", "{:.5f}".format(test_cost),
+          "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
+    sess.close()
+    return test_acc
 
 
 def create_network_nearest_neighbor(features,nbr_neighbors):

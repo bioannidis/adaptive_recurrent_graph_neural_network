@@ -97,6 +97,7 @@ def test_architecture(FLAGS,train_input,file):
     cost_val = []
     #writer = tf.summary.FileWriter("/tmp/demo/1")
     #writer.add_graph(sess.graph)
+    merged = tf.summary.merge_all()
 
     # Train model
     for epoch in range(FLAGS.epochs):
@@ -107,7 +108,7 @@ def test_architecture(FLAGS,train_input,file):
         feed_dict = construct_feed_dict(features, supports, y_train, train_mask, placeholders)
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         # Training step
-        outs = sess.run([model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
+        outs = sess.run([merged, model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
         #train_writer.add_summary(outs[0], epoch)
         # Validation
         cost, acc, duration = evaluate(features, supports, y_val, val_mask, placeholders)
@@ -151,7 +152,7 @@ neighbor_list=[2]
 max_degree=3
 sparse_reg=1e-4
 early_stopping=50
-dataset= 'cora'
+dataset= 'citeseer'
 your_counter = get_var_value()
 folder_name= "results/tests"+str(your_counter)+"/"
 if not os.path.exists(folder_name):

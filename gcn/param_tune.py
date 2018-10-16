@@ -78,61 +78,59 @@ def test_architecture(FLAGS,train_input,file):
     model = model_func(placeholders, input_dim=features[2][1], logging=True)
 
     # Initialize session
-    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+    sess= tf.Session()
 
-        # Define model evaluation function
-        def evaluate(features, supports, labels, mask, placeholders):
-            t_test = time.time()
-            feed_dict_val = construct_feed_dict(features, supports, labels, mask, placeholders)
-            outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
-            return outs_val[0], outs_val[1], (time.time() - t_test)
+    # Define model evaluation function
+    def evaluate(features, supports, labels, mask, placeholders):
+        t_test = time.time()
+        feed_dict_val = construct_feed_dict(features, supports, labels, mask, placeholders)
+        outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
+        return outs_val[0], outs_val[1], (time.time() - t_test)
 
-        # compare recursive with nonrecursive..... the graphs......
+    # compare recursive with nonrecursive..... the graphs......
 
-        # Init variables
-        merged = tf.summary.merge_all()
+    # Init variables
+    #test_writer = tf.summary.FileWriter("/tmp/demo/2" + '/test')
 
-        test_writer = tf.summary.FileWriter("/tmp/demo/2" + '/test')
+    sess.run(tf.global_variables_initializer())
 
-        sess.run(tf.global_variables_initializer())
+    cost_val = []
+    #writer = tf.summary.FileWriter("/tmp/demo/1")
+    #writer.add_graph(sess.graph)
 
-        cost_val = []
-        writer = tf.summary.FileWriter("/tmp/demo/1")
-        writer.add_graph(sess.graph)
+    # Train model
+    for epoch in range(FLAGS.epochs):
+        #train_writer = tf.summary.FileWriter("/tmp/demo/2" + '/train' + '/' + str(epoch),
+         #                                    sess.graph)
+        t = time.time()
+        # Construct feed dictionary
+        feed_dict = construct_feed_dict(features, supports, y_train, train_mask, placeholders)
+        feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+        # Training step
+        outs = sess.run([model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
+        #train_writer.add_summary(outs[0], epoch)
+        # Validation
+        cost, acc, duration = evaluate(features, supports, y_val, val_mask, placeholders)
+        cost_val.append(cost)
 
-        # Train model
-        for epoch in range(FLAGS.epochs):
-            train_writer = tf.summary.FileWriter("/tmp/demo/2" + '/train' + '/' + str(epoch),
-                                                 sess.graph)
-            t = time.time()
-            # Construct feed dictionary
-            feed_dict = construct_feed_dict(features, supports, y_train, train_mask, placeholders)
-            feed_dict.update({placeholders['dropout']: FLAGS.dropout})
-            # Training step
-            outs = sess.run([merged, model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
-            train_writer.add_summary(outs[0], epoch)
-            # Validation
-            cost, acc, duration = evaluate(features, supports, y_val, val_mask, placeholders)
-            cost_val.append(cost)
+        # Print results
+        # print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[2]), "train_acc=",
+        # "{:.5f}".format(outs[3]), "val_loss=", "{:.5f}".format(cost), "val_acc=", "{:.5f}".format(acc), "time=",
+        # "{:.5f}".format(time.time() - t))
 
-            # Print results
-            # print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(outs[2]), "train_acc=",
-            # "{:.5f}".format(outs[3]), "val_loss=", "{:.5f}".format(cost), "val_acc=", "{:.5f}".format(acc), "time=",
-            # "{:.5f}".format(time.time() - t))
+        if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping + 1):-1]):
+            print("Early stopping...")
+            break
 
-            if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping + 1):-1]):
-                print("Early stopping...")
-                break
-
-        print("Optimization Finished!")
+    print("Optimization Finished!")
 
         # Testing
-        test_cost, test_acc, test_duration = evaluate(features, supports, y_test, test_mask, placeholders)
-        print("Test set results:", "cost=", "{:.5f}".format(test_cost),
-              "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
-        #file.close()
-        sess.close()
-        return test_acc
+    test_cost, test_acc, test_duration = evaluate(features, supports, y_test, test_mask, placeholders)
+    print("Test set results:", "cost=", "{:.5f}".format(test_cost),
+          "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
+    #file.close()
+    sess.close()
+    return test_acc
 
 
 # Set random seed
@@ -140,12 +138,12 @@ seed = 123
 np.random.seed(seed)
 tf.set_random_seed(seed)
 learn_rates = [0.005]#np.linspace(0.01,0.08,4)
-smooth_regs = np.logspace(-6,-5,3)
+smooth_regs = np.logspace(-6,-3,5)
 hidden_units1 = [64]#range(8,32,8)
 hidden_units2 = [0]#range(8,32,8)
-dropout_rates = [0.9]#np.linspace(0.4,0.8,4)
-sparse_regs = np.logspace(-5,-3,3)
-weight_decays = np.logspace(-6,-4,4)
+dropout_rates = np.linspace(0.3,0.9,5)
+sparse_regs = np.logspace(-6,-3,5)
+weight_decays = np.logspace(-6,-3,5)
 epochs=200
 weight_decay=5e-4
 model = 'agrcn'
@@ -159,7 +157,7 @@ folder_name= "results/tests"+str(your_counter)+"/"
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 # Settings
-monte_carlo = 3
+monte_carlo = 5
 test_results={}
 with tf.device("/cpu:0"):
     train_input=load_data(dataset,neighbor_list)

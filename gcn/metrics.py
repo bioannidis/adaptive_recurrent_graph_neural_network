@@ -1,4 +1,6 @@
 from gcn.utils import *
+from gcn.utils import variable_summaries
+import tensorflow as tf
 
 
 def masked_softmax_cross_entropy(preds, labels, mask):

@@ -6,9 +6,16 @@ from scipy.sparse.linalg.eigen.arpack import eigsh
 import sys
 from sklearn.neighbors import kneighbors_graph
 from sklearn import svm
+from gcn.models import GCN, MLP, AGCN, AGRCN
+import time
 
 import tensorflow as tf
 
+def del_all_flags(FLAGS):
+    flags_dict = FLAGS._flags()
+    keys_list = [keys for keys in flags_dict]
+    for keys in keys_list:
+        FLAGS.__delattr__(keys)
 
 def parse_index_file(filename):
     """Parse index file."""
@@ -16,7 +23,13 @@ def parse_index_file(filename):
     for line in open(filename):
         index.append(int(line.strip()))
     return index
+def noise_power_from_snrdb(snrdb):
+    return 1/10.0 ** (snrdb/10.0)
 
+def add_noise2feat(x,snrdb):
+    noise_power=noise_power_from_snrdb(snrdb)
+    noise = noise_power* np.random.normal(0, 1, (np.shape(x)[1]))
+    return x+noise
 
 def sample_mask(idx, l):
     """Create mask."""
@@ -113,6 +126,105 @@ def load_data(dataset_str,neighbor_list):
     y_val[val_mask, :] = labels[val_mask, :]
     y_test[test_mask, :] = labels[test_mask, :]
     return adj_list, features, y_train, y_val, y_test, train_mask, val_mask, test_mask
+
+def test_architecture(FLAGS,train_input):
+    # Load data
+    #sys.stdout = file
+    adj_list, features, y_train, y_val, y_test, train_mask, val_mask, test_mask = train_input
+    tf.reset_default_graph()
+
+    # Some preprocessing
+    features = preprocess_features(features)
+    if FLAGS.model == 'gcn':
+        supports = preprocess_adj_list(adj_list)
+        num_supports = 1
+        model_func = GCN
+    elif FLAGS.model == 'gcn_cheby':
+        supports = chebyshev_polynomials(adj_list, FLAGS.max_degree)
+        num_supports = 1 + FLAGS.max_degree
+        model_func = GCN
+    elif FLAGS.model == 'agcn':
+        supports = preprocess_adj_list(adj_list)
+        num_supports = 1
+        num_graphs = len(adj_list)
+        model_func = AGCN
+    elif FLAGS.model == 'agrcn':
+        supports = preprocess_adj_list(adj_list)
+        num_supports = 1
+        num_graphs = len(adj_list)
+        model_func = AGRCN
+    elif FLAGS.model == 'agcn_cheby':
+        supports = [chebyshev_polynomials(adj_list, FLAGS.max_degree)]
+        num_supports = 1 + FLAGS.max_degree
+        model_func = AGCN
+    elif FLAGS.model == 'dense':
+        supports = adj_list  # Not used
+        num_supports = 1
+        model_func = MLP
+    else:
+        raise ValueError('Invalid argument for model: ' + str(FLAGS.model))
+
+    # Define placeholders
+    with tf.name_scope('placeholders'):
+        placeholders = {
+            'supports': [[tf.sparse_placeholder(tf.float32, name='graph_' + str(i) + '_hop_' + str(k)) for k in
+                          range(num_supports)] for i in range(num_graphs)],
+            'features': tf.sparse_placeholder(tf.float32, shape=tf.constant(features[2], dtype=tf.int64),
+                                              name='input_feautures'),
+            'labels': tf.placeholder(tf.float32, shape=(None, y_train.shape[1]), name='labels'),
+            'labels_mask': tf.placeholder(tf.int32, name='label_mask'),
+            'dropout': tf.placeholder_with_default(0., shape=(), name='dropout'),
+            'num_features_nonzero': tf.placeholder(tf.int32, name='num_features_nonzero')
+        # helper variable for sparse dropout
+        }
+
+    # Create model
+
+    model = model_func(placeholders, input_dim=features[2][1], logging=True)
+
+    # Initialize session
+    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+
+        # Define model evaluation function
+        def evaluate(features, supports, labels, mask, placeholders):
+            t_test = time.time()
+            feed_dict_val = construct_feed_dict(features, supports, labels, mask, placeholders)
+            outs_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_val)
+            return outs_val[0], outs_val[1], (time.time() - t_test)
+
+        # compare recursive with nonrecursive..... the graphs......
+
+        # Init variables
+        merged = tf.summary.merge_all()
+        sess.run(tf.global_variables_initializer())
+
+        cost_val = []
+
+        # Train model
+        for epoch in range(FLAGS.epochs):
+
+            # Construct feed dictionary
+            feed_dict = construct_feed_dict(features, supports, y_train, train_mask, placeholders)
+            feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+            # Training step
+            outs = sess.run([merged, model.opt_op, model.loss, model.accuracy], feed_dict=feed_dict)
+            # Validation
+            cost, acc, duration = evaluate(features, supports, y_val, val_mask, placeholders)
+            cost_val.append(cost)
+
+            if epoch > FLAGS.early_stopping and cost_val[-1] > np.mean(cost_val[-(FLAGS.early_stopping + 1):-1]):
+                print("Early stopping...")
+                break
+
+        print("Optimization Finished!")
+
+        # Testing
+        test_cost, test_acc, test_duration = evaluate(features, supports, y_test, test_mask, placeholders)
+        print("Test set results:", "cost=", "{:.5f}".format(test_cost),
+              "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
+        sess.close()
+        return test_acc
+
 
 def create_network_nearest_neighbor(features,nbr_neighbors):
     adjacency_list=[]

@@ -167,7 +167,7 @@ folder_name= "results/tests_noise"+str(your_counter)+"/"
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 # Settings
-monte_carlo = 4
+monte_carlo = 10
 noisy_feat=1
 all_results={}
 with tf.device("/gpu:0"):

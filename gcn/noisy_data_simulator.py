@@ -169,7 +169,7 @@ if not os.path.exists(folder_name):
 # Settings
 monte_carlo = 4
 noisy_feat=0
-all_results={}
+all_results={}  
 with tf.device("/gpu:0"):
     for neighbor_list in neighbor_lists:
         init_adj_list, init_features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(dataset,

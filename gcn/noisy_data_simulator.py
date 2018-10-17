@@ -161,14 +161,14 @@ neighbor_lists=[[2],[5],[10],[5,10]]
 max_degree=3
 sparse_reg=1e-4
 early_stopping=100
-dataset= 'ionosphere'
+dataset= 'synthetic'
 your_counter = get_var_value()
 folder_name= "results/tests_noise"+str(your_counter)+"/"
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 # Settings
 monte_carlo = 4
-noisy_feat=1
+noisy_feat=0
 all_results={}
 with tf.device("/gpu:0"):
     for neighbor_list in neighbor_lists:
@@ -221,6 +221,7 @@ with tf.device("/gpu:0"):
             max_ind=max(test_results.items(), key=operator.itemgetter(1))[0]
             max_acc=max(test_results.items(), key=operator.itemgetter(1))[1]
             test_results['max,'+max_ind]=max_acc
+            f_res.write(str(test_results))
             all_results["neighbor_list=" + str(neighbor_list)+'snr='+str(snr)+max_ind]=max_acc
         f_res = open(folder_name + 'noisy_feat='+str(noisy_feat)+",all_results,dataset=" + dataset +".txt", 'w')
         f_res.write(str(all_results))

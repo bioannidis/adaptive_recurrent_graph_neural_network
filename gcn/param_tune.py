@@ -139,13 +139,13 @@ seed = 123
 np.random.seed(seed)
 tf.set_random_seed(seed)
 learn_rates = [0.005]#np.linspace(0.01,0.08,4)
-smooth_regs = np.logspace(-6,-3,5)
+smooth_regs = np.logspace(-7,-3,6)
 hidden_units1 = [64]#range(8,32,8)
 hidden_units2 = [0]#range(8,32,8)
-dropout_rates = np.linspace(0.3,0.9,5)
-sparse_regs = np.logspace(-6,-3,5)
-weight_decays = np.logspace(-6,-3,5)
-epochs=200
+dropout_rates = [0.9]#np.linspace(0.3,0.9,5)
+sparse_regs = [1e-6]#np.logspace(-7,-3,5)
+weight_decays = np.logspace(-7,-3,6)
+epochs=300
 weight_decay=5e-4
 model = 'agrcn'
 neighbor_list=[2]
@@ -158,7 +158,7 @@ folder_name= "results/tests"+str(your_counter)+"/"
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 # Settings
-monte_carlo = 5
+monte_carlo = 10
 test_results={}
 with tf.device("/cpu:0"):
     train_input=load_data(dataset,neighbor_list)

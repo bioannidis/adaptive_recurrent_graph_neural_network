@@ -32,7 +32,7 @@ def generate_data(graph_flags, test_flags, graph_feat_flags, graph_label_flags,d
 
 
 def generate_graph(graph_flags):
-    if (graph_flags['breast_cancer']['bool']==1 | graph_flags['ionosphere']['bool']==1) | graph_flags['random']['bool'] == 1:
+    if graph_flags['ionosphere']['bool']==1 | graph_flags['random']['bool'] == 1:
         graph=[]
     elif graph_flags['erdos']['bool']==1 :
         graph=nx.fast_gnp_random_graph(n=graph_flags['nbr_nodes'],p=graph_flags['erdos']['edge_prob'],
@@ -205,9 +205,9 @@ average_degree=5
 min_community=30
 max_community=None
 directed=False
-nbr_exampl_per_class=100
+nbr_exampl_per_class=50
 edge_prob=0.05
-dataset_str='synthetic'
+dataset_str='ionosphere'
 graph_flags={}
 test_flags={}
 graph_flags['nbr_nodes']=nbr_nodes
@@ -216,7 +216,7 @@ graph_flags['erdos']={}
 graph_flags['erdos']['bool']=0
 graph_flags['lfr']={}
 graph_flags['random']={}
-graph_flags['random']['bool']=1
+graph_flags['random']['bool']=0
 graph_flags['random']['nbr_classes']=nbr_classes
 graph_flags['random']['means']=np.linspace(0,1,num=nbr_classes)
 graph_flags['random']['vars']=variance*np.ones(shape=(nbr_classes,1))
@@ -232,7 +232,7 @@ graph_flags['adult']={}
 graph_flags['adult']['bool']=0
 graph_flags['erdos']['edge_prob']= edge_prob
 graph_flags['ionosphere']= {}
-graph_flags['ionosphere']['bool']=0
+graph_flags['ionosphere']['bool']=1
 test_flags['nbr_exampl_per_class']=nbr_exampl_per_class
 graph_flags['lfr']['mu']=mu
 graph_flags['lfr']['folder']='/home/umhadmin/research/weighted_networks/gen_network/1network'+str(nbr_nodes)

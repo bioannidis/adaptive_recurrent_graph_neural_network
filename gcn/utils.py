@@ -26,7 +26,7 @@ def noise_power_from_snrdb(snrdb):
     return 1/10.0 ** (snrdb/10.0)
 
 def add_noise2feat(x,snrdb):
-    noise_power=noise_power_from_snrdb(snrdb)
+    noise_power=sp.linalg.norm(x)*noise_power_from_snrdb(snrdb)
     noise = noise_power* np.random.normal(0, 1, (np.shape(x)[1]))
     return x+noise
 

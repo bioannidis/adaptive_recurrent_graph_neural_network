@@ -13,6 +13,14 @@ def add_feat_noise(features,snr):
     for ind in range(np.shape(features)[0]):
         features[ind, :] = add_noise2feat(features[ind, :], snrdb=snr)
     return features
+def add_adj_noise(adj_list,snr):
+    for adjind in range(len(adj_list)):
+        adj=sp.csr_matrix.copy(adj_list[adjind])
+        for ind in range(np.shape(adj)[0]):
+            adj[ind, :] = add_noise2feat(adj[ind, :], snrdb=snr)
+        adj[adj<0]=0
+        adj_list[adjind]=adj
+    return adj_list
 
 def get_var_value(filename="varstore1.dat"):
     with open(filename, "r+") as f:
@@ -139,33 +147,40 @@ seed = 123
 np.random.seed(seed)
 tf.set_random_seed(seed)
 learn_rates = [0.005]#np.linspace(0.01,0.08,4)
-smooth_regs = np.logspace(-6,-5,3)
+smooth_regs = np.logspace(-8,-5,3)
 hidden_units1 = [32]#range(8,32,8)
 hidden_units2 = [0]#range(8,32,8)
-dropout_rates = [0.9]#np.linspace(0.4,0.8,4)
-sparse_regs = np.logspace(-5,-3,3)
+dropout_rates = [0.1,0.7]#np.linspace(0.4,0.8,4)
+sparse_regs = np.logspace(-8,-3,3)
 weight_decays = np.logspace(-6,-4,3)
-snrs= [0.25,1, 5, 25, 125]
-epochs=200
+snrs= [0.2,1,5,25,125]
+epochs=300
 weight_decay=5e-4
 model = 'agrcn'
-neighbor_lists=[[2],[10]]
+neighbor_lists=[[2],[5],[10],[5,10]]
 max_degree=3
 sparse_reg=1e-4
-early_stopping=300
+early_stopping=100
 dataset= 'ionosphere'
 your_counter = get_var_value()
 folder_name= "results/tests_noise"+str(your_counter)+"/"
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 # Settings
-monte_carlo = 2
+monte_carlo = 4
+noisy_feat=1
+all_results={}
 with tf.device("/gpu:0"):
     for neighbor_list in neighbor_lists:
-        adj_list, init_features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(dataset,
+        init_adj_list, init_features, y_train, y_val, y_test, train_mask, val_mask, test_mask = load_data(dataset,
                                                                                                      neighbor_list)
         for snr in snrs:
-            features=add_feat_noise(sp.lil_matrix.copy(init_features),snr=snr)
+            if noisy_feat==1:
+                features=add_feat_noise(sp.lil_matrix.copy(init_features),snr=snr)
+                adj_list=np.matrix.copy(init_adj_list)
+            else:
+                adj_list = add_adj_noise(np.matrix.copy(init_adj_list), snr=snr)
+                features = sp.lil_matrix.copy(init_features)
             test_results = {}
             train_input=adj_list, features, y_train, y_val, y_test, train_mask, val_mask, test_mask
             for learn_rate in learn_rates:
@@ -203,7 +218,9 @@ with tf.device("/gpu:0"):
                                         test_results[test_identifier]=np.mean(test_acc)
                                         f_res=open(folder_name+"final_results,snr="+str(snr)+",dataset="+dataset+",neighbor_list="+str(neighbor_list)+".txt",'w')
                                     f_res.write(str(test_results))
-        max_ind=max(test_results.items(), key=operator.itemgetter(1))[0]
-        max_acc=max(test_results.items(), key=operator.itemgetter(1))[1]
-        test_results['max,'+max_ind]=max_acc
-        f_res.write(str(test_results))
+            max_ind=max(test_results.items(), key=operator.itemgetter(1))[0]
+            max_acc=max(test_results.items(), key=operator.itemgetter(1))[1]
+            test_results['max,'+max_ind]=max_acc
+            all_results["neighbor_list=" + str(neighbor_list)+'snr='+str(snr)+max_ind]=max_acc
+        f_res = open(folder_name + 'noisy_feat='+str(noisy_feat)+",all_results,dataset=" + dataset +".txt", 'w')
+        f_res.write(str(all_results))

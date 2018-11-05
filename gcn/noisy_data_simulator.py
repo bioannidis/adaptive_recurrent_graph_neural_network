@@ -221,6 +221,7 @@ with tf.device("/gpu:0"):
             max_ind=max(test_results.items(), key=operator.itemgetter(1))[0]
             max_acc=max(test_results.items(), key=operator.itemgetter(1))[1]
             test_results['max,'+max_ind]=max_acc
+            f_res.write(str(test_results))
             all_results["neighbor_list=" + str(neighbor_list)+'snr='+str(snr)+max_ind]=max_acc
         f_res = open(folder_name + 'noisy_feat='+str(noisy_feat)+",all_results,dataset=" + dataset +".txt", 'w')
         f_res.write(str(all_results))

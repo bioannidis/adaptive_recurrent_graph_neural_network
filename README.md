@@ -8,9 +8,13 @@ available in arxiv https://arxiv.org/abs/1811.02061
 Please cite
 
 @article{ioannidis2018recurrent,
+
   title={A Recurrent Graph Neural Network for Multi-Relational Data},
+  
   author={Ioannidis, Vassilis N and Marques, Antonio G and Giannakis, Georgios B},
+  
   journal={arXiv preprint arXiv:1811.02061},
+  
   year={2018}
 }
 
